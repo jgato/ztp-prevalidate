@@ -295,3 +295,155 @@ So 'clustername' in the SiteConfig needs to be lowercased:
     clusterLabels:      
 ...
 ```
+
+
+
+
+
+# Using the script with Git hooks
+
+For this initial idea, we can create a Git hook for 'pre-commit' that executes our validation script.  Maybe with commits it will be executed to often, and you can use the pre-push hook.
+
+The hook is not too complex, but it test if the commit you are doing makes changes on Siteconfig and/or PolicyGenTemplates. 
+
+```bash
+#!/usr/bin/sh
+#
+# hook to verify if ZTP CRs are valid
+#exit 0
+#set -e
+SITECONFIGS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig
+PGTS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates
+VERIFY_SCRIPT=/home/jgato/Projects-src/my_github/ztp-prevalidate/pre-validate-manifests.sh
+ERROR=0
+
+# just check if it is the first commit
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# lets do the pre-validation but only on the proper directory
+
+if git diff --name-only --cached | grep "${SITECONFIGS}"
+then
+    echo "Pre validation of Siteconfigs directory"
+    (${VERIFY_SCRIPT} ${SITECONFIGS}) 1>/dev/null
+fi
+if [[ $? != 0  ]]; then
+    echo "Error processing Siteconfig"
+    ERROR=1
+fi
+
+if git diff --name-only --cached | grep "${PGTS}"
+then
+    echo "Pre validation of PolicyGenTemplates directory"
+    (${VERIFY_SCRIPT} ${PGTS}) 1>/dev/null
+fi
+if [[ $? != 0  ]]; then
+    echo "Error processing PolicyGenTemplates"
+    ERROR=1
+fi
+
+exit $ERROR
+
+```
+
+You can find the hook also [here](./pre-commit.sample)
+
+It only needs to configure the directories for the CRs and the script. It has to be placed on  '.git/hooks/pre-commit'
+
+Lets modify our Manifests to include some of the previous errors.
+
+First of all our git status is "clean". It does not contain any staged changed affecting to our two objective directories:
+
+```bash
+> git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   ../../../resources-scripts/prepare-ztp-cluster.sh
+	modified:   ../../../../../Profiles/KDump/README.md
+
+```
+
+Some modified files, but not under the control of the hook.
+
+Lets change one siteconfig cluster name to something wrong:
+
+Wrong name on one of our clusters:
+
+```yaml
+> cat siteconfig/sno-b7-e-4-10-ipv4.yaml 
+apiVersion: ran.openshift.io/v1
+kind: SiteConfig
+metadata:
+  name: "sno-b7"
+  namespace: "sno-b7"
+spec:
+  baseDomain: "el8k-1.hpecloud.org"
+  pullSecretRef:
+    name: "assisted-deployment-pull-secret"
+  clusterImageSetNameRef: "img4.10.5-x86-64-appsub"
+  sshPublicKey: "ssh-rsa AA...hpecloud.org"
+  clusters:
+  - clusterName: "SNO-b7"
+    networkType: "OVNKubernetes"
+    clusterLabels:
+
+
+```
+
+Notice the error in 'clusterName: "SNO-b7'
+
+The script will try to find as much errors as possible by commit. So lets include also an error on the PolicyGenTemplates. For example: adding to kustomization file, a PolicyGenTemplate that does not exists:
+
+```yaml
+> cat policygentemplates/kustomization.yaml 
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+generators:
+  - group-du-sno.yaml
+...
+...
+  - not-existing.yaml
+resources:
+- ns.yaml
+
+```
+
+Notice the not existing file called 'not-existing.yaml'
+
+We add both modified files and commit:
+
+```bash
+$> git add siteconfig/sno-b7-e-4-10-ipv4.yaml policygentemplates/kustomization.yaml
+
+$> git commit 
+ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno-b7-e-4-10-ipv4.yaml
+Pre validation of Siteconfigs directory
+Error from server (Invalid): error when creating "STDIN": Namespace "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')
+Error from server (Invalid): error when creating "STDIN": ConfigMap "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": InfraEnv.agent-install.openshift.io "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": KlusterletAddonConfig.agent.open-cluster-management.io "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": ManagedCluster.cluster.open-cluster-management.io "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": AgentClusterInstall.extensions.hive.openshift.io "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": ClusterDeployment.hive.openshift.io "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error processing Siteconfig
+ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/kustomization.yaml
+Pre validation of PolicyGenTemplates directory
+Error: loading generator plugins: accumulation err='accumulating resources from 'not-existing.yaml': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml: no such file or directory': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml: no such file or directory
+error: no objects passed to apply
+Error processing PolicyGenTemplates
+
+
+```
+
+The two errors are captured and the commit is aborted :)

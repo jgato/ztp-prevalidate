@@ -1,0 +1,44 @@
+#!/usr/bin/sh
+#
+# hook to verify if ZTP CRs are valid
+#exit 0
+#set -e
+SITECONFIGS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig
+PGTS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates
+VERIFY_SCRIPT=/home/jgato/Projects-src/my_github/ztp-prevalidate/pre-validate-manifests.sh
+ERROR=0
+
+# just check if it is the first commit
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=$(git hash-object -t tree /dev/null)
+fi
+
+# lets do the pre-validation but only on the proper directory
+
+if git diff --name-only --cached | grep "${SITECONFIGS}"
+then
+    echo "Pre validation of Siteconfigs directory"
+    (${VERIFY_SCRIPT} ${SITECONFIGS}) 1>/dev/null
+fi
+if [[ $? != 0  ]]; then
+    echo "Error processing Siteconfig"
+    ERROR=1
+fi
+
+if git diff --name-only --cached | grep "${PGTS}"
+then
+    echo "Pre validation of PolicyGenTemplates directory"
+    (${VERIFY_SCRIPT} ${PGTS}) 1>/dev/null
+fi
+if [[ $? != 0  ]]; then
+    echo "Error processing PolicyGenTemplates"
+    ERROR=1
+fi
+
+exit $ERROR
+
+
