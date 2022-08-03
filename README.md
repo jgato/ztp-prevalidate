@@ -18,8 +18,6 @@ This document presents an initial idea to validate these resources before going 
 
 This document does not cover how to use and install ZTP. You can get more info [here](https://github.com/RHsyseng/telco-operations/tree/main/ztp/remote-worker-day0/ztp-policygentool) and with the official [Red Hat documentation](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.9/html/scalability_and_performance/ztp-deploying-disconnected). This other article shows an example of [why to use ZTP](https://www.redhat.com/en/blog/absolute-zero-touch-because-you-cant-reach-all-way-edge)
 
-
-
 ## Why validating before going to GitOps is needed
 
 ZTP with GitOps methodology implies these steps in your (daily) activities:
@@ -44,8 +42,6 @@ ZTP with GitOps methodology implies these steps in your (daily) activities:
 
 6) If something was wrong the error stops all the process, and you have to go back to step 1) or 2). If everything is ok, the sync is done, ACM/Hive will make all the work for you.
 
-
-
 The main validation happens on step 5, when a "machine" is trying to apply your resources. If it fails, you have to get back to your Manifests, check everything, make the push, make the PR and get the merge approved. All these steps, to try and validate again.
 
 To create a SiteConfig/PolicyGenTemplate is not an easy task. These contains many fields and many fields potentially creates many point's of error. You can have a look on the CRD of [SiteConfig](https://github.com/openshift-kni/cnf-features-deploy/blob/master/ztp/ran-crd/site-config-crd.yaml) and [PGT](https://github.com/openshift-kni/cnf-features-deploy/blob/master/ztp/ran-crd/policy-gen-template-crd.yaml)
@@ -56,8 +52,6 @@ If you fail, you try to fix and you end up messing your git history with many un
 
 ## Pre-validating before pushing
 
-
-
 So, according the previous flow we could make a pre-validation during following steps:
 
 * Step 3) Before pushing you changes an script would make a pre-validation.
@@ -66,9 +60,7 @@ So, according the previous flow we could make a pre-validation during following 
 
 * Step 4.2) maybe the PR is done manually by a person, ideally here there is a kind of CI that could make the validation
 
-In this tutorial, a first try with a pretty simple [script](../ocp_kubernetes_scripts/validate-manifests.sh) has been implemented.
-
-
+In this tutorial, a first try with a pretty simple [script](./pre-validate-manifests.sh) has been implemented.
 
 ## Script to make the validation
 
@@ -95,8 +87,6 @@ The --dri-run=server will pass all the manifests to the API-Server but the resou
 Resources depending on other resources (for example a NameSpace) will fail. The NameSpace problem: during the --dry-run the needed NameSpaces are created, but not persisted. Next objects that will be stored on that NS will fail.
 
 * Workaround, the script will substitute the NameSpaces destinations to default one (that will always exists). Anyway, nothing will be created there, because during --dry-run nothing is persisted.
-
-
 
 ## Executing the script
 
@@ -171,7 +161,6 @@ Cheking yaml syntax
   22:8      warning  wrong indentation: expected 8 but found 7  (indentation)
   24:8      warning  wrong indentation: expected 8 but found 7  (indentation)
   25:17     error    no new line character at the end of file  (new-line-at-end-of-file)
-
 ```
 
 This first try it points to some errors about trailing spaces or newlines. This is not critical, and ZTP will not fail, but why not to fix this?
@@ -187,7 +176,6 @@ Checking Siteconfig/PGT Manifests with Kustomize plugins
 Error: loading generator plugins: accumulation err='accumulating resources from 'sno3-e.yaml': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno3-e.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno3-e.yaml: no such file or directory': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno3-e.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno3-e.yaml: no such file or directory
 error: no objects passed to apply
 Error processing manifests
-
 ```
 
 It seems the Kustomization file include Manifests not existing:
@@ -220,7 +208,6 @@ generators:
   - sno5-e-4-9-only-sctp.yaml
   - sno-b7-e-4-10-ipv4.yaml
   - sno-b8-e-4-10-ipv4.yaml
-
 ```
 
 ### Error in CRs: Duplicated resources
@@ -234,7 +221,6 @@ a2cbaf1f151ae7d490a9987511e35522813004c4a76e5f87d4372606d907dd57
 Error: loading generator plugins: accumulation err='merging resources from 'el8k-ztp-1-standard-ipv6.yaml': may not add resource with an already registered id: ran.openshift.io_v1_SiteConfig|el8k-ztp-1|el8k-ztp-1': got file 'el8k-ztp-1-standard-ipv6.yaml', but '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/el8k-ztp-1-standard-ipv6.yaml' must be a directory to be a root
 error: no objects passed to apply
 Error processing manifests
-
 ```
 
 The name 'el8k-ztp-1' is used in more than one Manifest that you are trying to apply:
@@ -247,7 +233,6 @@ The name 'el8k-ztp-1' is used in more than one Manifest that you are trying to a
 /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/el8k-ztp-1-standard-ipv6-4-8.yaml:  name: "el8k-ztp-1"
 /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/el8k-ztp-1-standard-ipv6.yaml:  name: "el8k-ztp-1"
 /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/el8k-ztp-1-standard.yaml:  name: "el8k-ztp-1"
-
 ```
 
 This is because I have different yamls, to install the same site with different configurations. Of course, I install only one at the same time. I have to fix my Kustomization file to include only one:
@@ -310,5 +295,3 @@ So 'clustername' in the SiteConfig needs to be lowercased:
     clusterLabels:      
 ...
 ```
-
-
