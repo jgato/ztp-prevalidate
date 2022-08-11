@@ -20,7 +20,7 @@ if [[ ! -d $BASEDIR ]]; then
 fi
 
 echo "Cheking yaml syntax"
-yamllint ${BASEDIR} -d relaxed
+yamllint ${BASEDIR} -d relaxed --no-warnings
 
 if [[ $? != 0  ]]; then
     echo "Error on yamls systax"
