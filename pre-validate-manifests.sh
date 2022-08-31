@@ -7,6 +7,7 @@
 
 BASEDIR=$1
 ZTP_SITE_GENERATOR_IMG="quay.io/openshift-kni/ztp-site-generator:latest"
+ERRORS=0
 
 if [[ $1 == "-h" || $1 == "--help" ]]; then
     echo "Usage:"
@@ -24,7 +25,7 @@ yamllint ${BASEDIR} -d relaxed --no-warnings
 
 if [[ $? != 0  ]]; then
     echo "Error on yamls systax"
-    exit 1
+    ERRORS=1
 fi
 
 echo "Checking Management cluster connectivity"
@@ -32,7 +33,7 @@ oc get clusterversion > /dev/null
 
 if [[ $? != 0  ]]; then
     echo "Error connecting OCP cluster. Is kubeconfig correctly exported/configured?"
-    exit 1
+    ERRORS=1
 fi
 
 echo "Checking Siteconfig/PGT Manifests with Kustomize plugins"
@@ -46,8 +47,8 @@ kustomize build ${BASEDIR} --enable-alpha-plugins |  sed -E -e 's/(namespace: )(
 
 if [[ $? != 0  ]]; then
     echo "Error processing manifests"
-    exit 1
+    ERRORS=1
 fi
 
-exit 0
+exit $ERRORS
 

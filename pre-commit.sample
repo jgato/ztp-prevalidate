@@ -22,7 +22,7 @@ fi
 if git diff --name-only --cached | grep "${SITECONFIGS}"
 then
     echo "Pre validation of Siteconfigs directory"
-    (${VERIFY_SCRIPT} ${SITECONFIGS}) 1>/dev/null
+    (${VERIFY_SCRIPT} ${SITECONFIGS})
 fi
 if [[ $? != 0  ]]; then
     echo "Error processing Siteconfig"
@@ -32,7 +32,7 @@ fi
 if git diff --name-only --cached | grep "${PGTS}"
 then
     echo "Pre validation of PolicyGenTemplates directory"
-    (${VERIFY_SCRIPT} ${PGTS}) 1>/dev/null
+    (${VERIFY_SCRIPT} ${PGTS})
 fi
 if [[ $? != 0  ]]; then
     echo "Error processing PolicyGenTemplates"
