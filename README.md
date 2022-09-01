@@ -62,7 +62,7 @@ So, according the previous flow we could make a pre-validation during following 
 
 In this tutorial, a first try with a pretty simple [script](./pre-validate-manifests.sh) has been implemented.
 
-## Script to make the validation
+# Pre-Validation script
 
 This first implementation try includes a simple script that will make the validation. How does it works:
 
@@ -78,7 +78,21 @@ This first implementation try includes a simple script that will make the valida
 
 * The output from previous step has transformed int Siteconfig/PolicyGenTemplate CRs. These new Manifests are applied to the Openshift cluster with a [--dri-run=server](https://kubernetes.io/blog/2019/01/14/apiserver-dry-run-and-kubectl-diff/#apiserver-dry-run). In this way, the generated Manifests are passed to your cluster API-Server, but not applied. More errors are detected here.
 
-### NameSpaces limitation and --dry-run
+## Requirements
+
+It is just a bash script but you will need:
+
+* ['yamllint' tool](https://github.com/adrienverge/yamllint)
+
+* yq 
+
+* podman
+
+* Connectivity to Openshift cluster (export KUBECONFIG=kubeconfig)
+
+
+
+## NameSpaces limitation and --dry-run
 
 It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a but, but a feature (or limitation)
 
@@ -296,10 +310,6 @@ So 'clustername' in the SiteConfig needs to be lowercased:
 ...
 ```
 
-
-
-
-
 # Using the script with Git hooks
 
 For this initial idea, we can create a Git hook for 'pre-commit' that executes our validation script.  Maybe with commits it will be executed to often, and you can use the pre-push hook.
@@ -320,10 +330,10 @@ ERROR=0
 # just check if it is the first commit
 if git rev-parse --verify HEAD >/dev/null 2>&1
 then
-	against=HEAD
+    against=HEAD
 else
-	# Initial commit: diff against an empty tree object
-	against=$(git hash-object -t tree /dev/null)
+    # Initial commit: diff against an empty tree object
+    against=$(git hash-object -t tree /dev/null)
 fi
 
 # lets do the pre-validation but only on the proper directory
@@ -349,7 +359,6 @@ if [[ $? != 0  ]]; then
 fi
 
 exit $ERROR
-
 ```
 
 You can find the hook also [here](./pre-commit.sample)
@@ -368,9 +377,8 @@ Your branch is up to date with 'origin/main'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   ../../../resources-scripts/prepare-ztp-cluster.sh
-	modified:   ../../../../../Profiles/KDump/README.md
-
+    modified:   ../../../resources-scripts/prepare-ztp-cluster.sh
+    modified:   ../../../../../Profiles/KDump/README.md
 ```
 
 Some modified files, but not under the control of the hook.
@@ -396,8 +404,6 @@ spec:
   - clusterName: "SNO-b7"
     networkType: "OVNKubernetes"
     clusterLabels:
-
-
 ```
 
 Notice the error in 'clusterName: "SNO-b7'
@@ -416,7 +422,6 @@ generators:
   - not-existing.yaml
 resources:
 - ns.yaml
-
 ```
 
 Notice the not existing file called 'not-existing.yaml'
@@ -442,8 +447,6 @@ Pre validation of PolicyGenTemplates directory
 Error: loading generator plugins: accumulation err='accumulating resources from 'not-existing.yaml': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml: no such file or directory': evalsymlink failure on '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml' : lstat /home/jgato/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates/not-existing.yaml: no such file or directory
 error: no objects passed to apply
 Error processing PolicyGenTemplates
-
-
 ```
 
 The two errors are captured and the commit is aborted :)

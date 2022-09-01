@@ -16,8 +16,13 @@ get_plugins()
     export KUSTOMIZE_PLUGIN_HOME=/tmp/ztp-kustomize-plugin/
 
     mkdir -p /tmp/ztp-kustomize-plugin/
-    podman cp $(podman create --name policgentool --rm ${ZTP_SITE_GENERATOR_IMG=} > /dev/null):/kustomize/plugin/ran.openshift.io /tmp/ztp-kustomize-plugin/
-    podman rm -f policgentool
+    podman cp $(podman create --name policgentool --rm ${ZTP_SITE_GENERATOR_IMG}):/kustomize/plugin/ran.openshift.io /tmp/ztp-kustomize-plugin/
+    if [[ $? != 0  ]]; then
+        echo "Error getting plugins"
+        podman rm policgentool > /dev/null
+        exit 1
+    fi
+    podman rm policgentool > /dev/null
 }
 
 usage()
@@ -52,32 +57,31 @@ echo "======================================================="
 echo "| Cheking ZTP Manifests in kustomization.yaml         |"
 echo "======================================================="
 
-
-
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
-#kustomize build ${VALIDATE_SRC} --enable-alpha-plugins |  sed -E -e 's/(namespace: )(.+)/\1default\n/g' | oc apply --dry-run=server -f - >${PRE_VALIDATE_ERROR_LOG} 2>&1
+kustomize build ${VALIDATE_SRC} --enable-alpha-plugins >${PRE_VALIDATE_ERROR_LOG} 2>&1 |  sed -E -e 's/(namespace: )(.+)/\1default\n/g' | oc apply --dry-run=server -f - >${PRE_VALIDATE_ERROR_LOG} 2>&1
 if [[ $? != 0  ]]; then
-    echo "X"
+    echo "Error"
     ERRORS=1
 else
     echo "OK"
 fi
 
-FILES=('/home/jgato/Projects-src/billerica-gogs/ztp-belerica/site-configs/intel-1-sno-1.yaml' '/home/jgato/Projects-src/billerica-gogs/ztp-belerica/site-configs/bellerica-sno1.yaml')
 
 echo "======================================================="
 echo "| Cheking yaml syntax for files in kustomization.yaml |"
 echo "======================================================="
 
+FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
+
 for FILE in ${FILES[@]}
 do
     echo -e  "\t $FILE"
     echo -ne "\t - yamllint validation: "
-    yamllint ${FILE} -d relaxed --no-warnings >> ${PRE_VALIDATE_ERROR_LOG} 2>&1
+    yamllint ${VALIDATE_SRC}/${FILE} -d relaxed --no-warnings >> ${PRE_VALIDATE_ERROR_LOG} 2>&1
 
     if [[ $? != 0  ]]; then
-        echo "X"
+        echo "Error"
         ERRORS=1
     else
         echo "OK"
