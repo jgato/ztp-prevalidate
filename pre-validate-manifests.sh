@@ -7,7 +7,7 @@
 
 VALIDATE_SRC=$1
 ZTP_SITE_GENERATOR_IMG="quay.io/openshift-kni/ztp-site-generator:latest"
-PRE_VALIDATE_ERROR_LOG="/tmp/pre-validate-error.log"
+PRE_VALIDATE_ERROR_LOG="/tmp/pre-validate-error-${RANDOM}.log"
 ERRORS=0
 FILES=()
 
@@ -45,11 +45,10 @@ fi
 
 get_plugins
 
-echo "Checking Management cluster connectivity"
 oc get clusterversion > /dev/null
 
 if [[ $? != 0  ]]; then
-    echo "Error connecting OCP cluster. Is kubeconfig correctly exported/configured?"
+    echo "Error connecting OCP cluster to simulate/validate Resources. Is kubeconfig correctly exported/configured?"
     exit 1
 fi
 
@@ -89,5 +88,8 @@ do
 
 done
 
+if [[ $ERRORS ]]; then
+    echo "Get error's details in: ${PRE_VALIDATE_ERROR_LOG}"
+fi
 exit ${ERRORS}
 

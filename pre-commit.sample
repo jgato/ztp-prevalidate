@@ -19,7 +19,7 @@ fi
 
 # lets do the pre-validation but only on the proper directory
 
-if git diff --name-only --cached | grep "${SITECONFIGS}"
+if git diff --name-only --cached | grep "${SITECONFIGS}" > /dev/null
 then
     echo "Pre validation of Siteconfigs directory"
     (${VERIFY_SCRIPT} ${SITECONFIGS})
@@ -31,7 +31,7 @@ fi
 
 if git diff --name-only --cached | grep "${PGTS}"
 then
-    echo "Pre validation of PolicyGenTemplates directory"
+    echo "Pre validation of PolicyGenTemplates directory" > /dev/null
     (${VERIFY_SCRIPT} ${PGTS})
 fi
 if [[ $? != 0  ]]; then
