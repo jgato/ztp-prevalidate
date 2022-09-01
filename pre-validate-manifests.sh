@@ -5,50 +5,85 @@
 # it allows to check it before pushing changes
 # to be used on our CI/CD
 
-BASEDIR=$1
+VALIDATE_SRC=$1
 ZTP_SITE_GENERATOR_IMG="quay.io/openshift-kni/ztp-site-generator:latest"
+PRE_VALIDATE_ERROR_LOG="/tmp/pre-validate-error.log"
 ERRORS=0
+FILES=()
 
-if [[ $1 == "-h" || $1 == "--help" ]]; then
-    echo "Usage:"
-    echo "  $(basename $0) PATH_WITH_MANIFESTS"
-    exit 1
+get_plugins()
+{
+    export KUSTOMIZE_PLUGIN_HOME=/tmp/ztp-kustomize-plugin/
+
+    mkdir -p /tmp/ztp-kustomize-plugin/
+    podman cp $(podman create --name policgentool --rm ${ZTP_SITE_GENERATOR_IMG=} > /dev/null):/kustomize/plugin/ran.openshift.io /tmp/ztp-kustomize-plugin/
+    podman rm -f policgentool
+}
+
+usage()
+{
+    if [[ $1 == "-h" || $1 == "--help" ||  "$#" -ne 1  ]]; then
+        echo "Usage:"
+        echo "  $(basename $0) DIR_WITH_KUSTOMIZATION_YAML"
+        exit 1
+    fi
+}
+
+
+if [[ $1 == "-h" || $1 == "--help" ||  "$#" -ne 1  ]]; then
+    usage
 fi
 
-if [[ ! -d $BASEDIR ]]; then
-    echo "FATAL: $BASEDIR is not a directory" >&2
-    exit 1
+if [[ ! -d ${VALIDATE_SRC} || -d ${VALIDATE_SRC}/kustomization.yaml ]]; then
+    usage
 fi
 
-echo "Cheking yaml syntax"
-yamllint ${BASEDIR} -d relaxed --no-warnings
-
-if [[ $? != 0  ]]; then
-    echo "Error on yamls systax"
-    ERRORS=1
-fi
+get_plugins
 
 echo "Checking Management cluster connectivity"
 oc get clusterversion > /dev/null
 
 if [[ $? != 0  ]]; then
     echo "Error connecting OCP cluster. Is kubeconfig correctly exported/configured?"
-    ERRORS=1
+    exit 1
 fi
 
-echo "Checking Siteconfig/PGT Manifests with Kustomize plugins"
-export KUSTOMIZE_PLUGIN_HOME=/tmp/ztp-kustomize-plugin/
+echo "======================================================="
+echo "| Cheking ZTP Manifests in kustomization.yaml         |"
+echo "======================================================="
 
-mkdir -p /tmp/ztp-kustomize-plugin/
-podman cp $(podman create --name policgentool --rm ${ZTP_SITE_GENERATOR_IMG=}):/kustomize/plugin/ran.openshift.io /tmp/ztp-kustomize-plugin/
-podman rm -f policgentool
 
-kustomize build ${BASEDIR} --enable-alpha-plugins |  sed -E -e 's/(namespace: )(.+)/\1default\n/g' | oc apply --dry-run=server -f -
 
+echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
+
+#kustomize build ${VALIDATE_SRC} --enable-alpha-plugins |  sed -E -e 's/(namespace: )(.+)/\1default\n/g' | oc apply --dry-run=server -f - >${PRE_VALIDATE_ERROR_LOG} 2>&1
 if [[ $? != 0  ]]; then
-    echo "Error processing manifests"
+    echo "X"
     ERRORS=1
+else
+    echo "OK"
 fi
 
-exit $ERRORS
+FILES=('/home/jgato/Projects-src/billerica-gogs/ztp-belerica/site-configs/intel-1-sno-1.yaml' '/home/jgato/Projects-src/billerica-gogs/ztp-belerica/site-configs/bellerica-sno1.yaml')
+
+echo "======================================================="
+echo "| Cheking yaml syntax for files in kustomization.yaml |"
+echo "======================================================="
+
+for FILE in ${FILES[@]}
+do
+    echo -e  "\t $FILE"
+    echo -ne "\t - yamllint validation: "
+    yamllint ${FILE} -d relaxed --no-warnings >> ${PRE_VALIDATE_ERROR_LOG} 2>&1
+
+    if [[ $? != 0  ]]; then
+        echo "X"
+        ERRORS=1
+    else
+        echo "OK"
+    fi
+
+done
+
+exit ${ERRORS}
 
