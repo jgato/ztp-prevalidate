@@ -58,7 +58,7 @@ echo "======================================================="
 
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
-kustomize build ${VALIDATE_SRC} --enable-alpha-plugins >${PRE_VALIDATE_ERROR_LOG} 2>&1 |  sed -E -e 's/(namespace: )(.+)/\1default\n/g' | oc apply --dry-run=server -f - >${PRE_VALIDATE_ERROR_LOG} 2>&1
+kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
 if [[ $? != 0  ]]; then
     echo "Error"
     ERRORS=1
@@ -77,7 +77,7 @@ for FILE in ${FILES[@]}
 do
     echo -e  "\t $FILE"
     echo -ne "\t - yamllint validation: "
-    yamllint ${VALIDATE_SRC}/${FILE} -d relaxed --no-warnings >> ${PRE_VALIDATE_ERROR_LOG} 2>&1
+    yamllint ${VALIDATE_SRC}/${FILE} -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
 
     if [[ $? != 0  ]]; then
         echo "Error"
@@ -88,8 +88,7 @@ do
 
 done
 
-if [[ $ERRORS ]]; then
-    echo "Get error's details in: ${PRE_VALIDATE_ERROR_LOG}"
-fi
+echo "Log details in: ${PRE_VALIDATE_ERROR_LOG}"
+
 exit ${ERRORS}
 
