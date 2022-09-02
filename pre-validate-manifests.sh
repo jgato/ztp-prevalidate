@@ -68,16 +68,17 @@ else
     fi
 fi
 
-ZTP_SITE_GENERATOR_IMG=`oc -n openshift-gitops get argocd openshift-gitops -o jsonpath={.spec.repo.initContainers[0].image}`
-echo -e "${BGreen}Validating with ztp-site-generator: ${ZTP_SITE_GENERATOR_IMG}${Color_Off}"
-get_plugins
-
 oc get clusterversion > /dev/null
 
 if [[ $? != 0  ]]; then
     echo "Error connecting OCP cluster to simulate/validate Resources. Is kubeconfig correctly exported/configured?"
     exit 1
 fi
+
+ZTP_SITE_GENERATOR_IMG=`oc -n openshift-gitops get argocd openshift-gitops -o jsonpath={.spec.repo.initContainers[0].image}`
+echo -e "${BGreen}Validating with ztp-site-generator: ${ZTP_SITE_GENERATOR_IMG}${Color_Off}"
+get_plugins
+
 
 echo -e "${BYellow}======================================================="
 echo "| Cheking yaml syntax for files in kustomization.yaml |"
