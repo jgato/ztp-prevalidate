@@ -26,10 +26,10 @@ BPurple='\033[1;35m'      # Purple
 
 
 VALIDATE_SRC=$1
-ZTP_SITE_GENERATOR_IMG="quay.io/openshift-kni/ztp-site-generator:latest"
 PRE_VALIDATE_ERROR_LOG="/tmp/pre-validate-error-${RANDOM}.log"
 ERRORS=0
 FILES=()
+
 
 get_plugins()
 {
@@ -68,7 +68,8 @@ else
     fi
 fi
 
-
+ZTP_SITE_GENERATOR_IMG=`oc -n openshift-gitops get argocd openshift-gitops -o jsonpath={.spec.repo.initContainers[0].image}`
+echo -e "${BGreen}Validating with ztp-site-generator: ${ZTP_SITE_GENERATOR_IMG}${Color_Off}"
 get_plugins
 
 oc get clusterversion > /dev/null
