@@ -1,10 +1,12 @@
 #!/usr/bin/sh
 #
 # hook to verify if ZTP CRs are valid
-#exit 0
-#set -e
-SITECONFIGS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig
-PGTS=ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates
+
+# author: Jose Gato Luis <jgato@redhat.com>
+
+
+SITECONFIGS=site-configs/
+PGTS=site-policies/
 VERIFY_SCRIPT=/home/jgato/Projects-src/my_github/ztp-prevalidate/pre-validate-manifests.sh
 ERROR=0
 
@@ -25,18 +27,27 @@ then
     (${VERIFY_SCRIPT} ${SITECONFIGS})
 fi
 if [[ $? != 0  ]]; then
-    echo "Error processing Siteconfig"
     ERROR=1
 fi
 
-if git diff --name-only --cached | grep "${PGTS}"
+if git diff --name-only --cached | grep "${PGTS}"  > /dev/null
 then
-    echo "Pre validation of PolicyGenTemplates directory" > /dev/null
+    echo "Pre validation of PolicyGenTemplates directory"
     (${VERIFY_SCRIPT} ${PGTS})
 fi
 if [[ $? != 0  ]]; then
-    echo "Error processing PolicyGenTemplates"
     ERROR=1
+fi
+
+if [[ ${ERROR} != 0 ]]
+then
+    echo "==========================================================="
+    echo "| The commit is aborted until errors ar solved            |"
+    echo "|                                                         |"
+    echo "| If you really need to commit, disable the hook          |"
+    echo "|    <REPO>/.git/hooks/pre-commit                         |"
+    echo "| or, do the commit with '--no-verify'                    |"
+    echo "==========================================================="
 fi
 
 exit $ERROR
