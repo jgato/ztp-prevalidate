@@ -61,7 +61,13 @@ fi
 
 if [[ ! -d ${VALIDATE_SRC} || -d ${VALIDATE_SRC}/kustomization.yaml ]]; then
     usage
+else
+#ensure dir ends with /
+    if [[ ${VALIDATE_SRC} != */ ]]; then
+        VALIDATE_SRC=${VALIDATE_SRC}/
+    fi
 fi
+
 
 get_plugins
 
