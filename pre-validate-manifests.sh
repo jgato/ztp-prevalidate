@@ -5,6 +5,26 @@
 # it allows to check it before pushing changes
 # to be used on our CI/CD
 
+# author: Jose Gato Luis <jgato@redhat.com>
+
+#########################
+# Some colours for output
+#########################
+
+Color_Off='\033[0m'
+Red='\033[0;31m'          # Red
+Green='\033[0;32m'        # Green
+Yellow='\033[0;33m'       # Yellow
+Blue='\033[0;34m'         # Blue
+BRed='\033[1;31m'         # Red
+BGreen='\033[1;32m'       # Green
+BYellow='\033[1;33m'      # Yellow
+BBlue='\033[1;34m'        # Blue
+BPurple='\033[1;35m'      # Purple
+
+########################
+
+
 VALIDATE_SRC=$1
 ZTP_SITE_GENERATOR_IMG="quay.io/openshift-kni/ztp-site-generator:latest"
 PRE_VALIDATE_ERROR_LOG="/tmp/pre-validate-error-${RANDOM}.log"
@@ -52,24 +72,9 @@ if [[ $? != 0  ]]; then
     exit 1
 fi
 
-echo "======================================================="
-echo "| Cheking ZTP Manifests in kustomization.yaml         |"
-echo "======================================================="
-
-echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
-
-kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
-if [[ $? != 0  ]]; then
-    echo "Error"
-    ERRORS=1
-else
-    echo "OK"
-fi
-
-
-echo "======================================================="
+echo -e "${BYellow}======================================================="
 echo "| Cheking yaml syntax for files in kustomization.yaml |"
-echo "======================================================="
+echo -e "=======================================================${Color_Off}"
 
 FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
 
@@ -80,13 +85,28 @@ do
     yamllint ${VALIDATE_SRC}/${FILE} -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
 
     if [[ $? != 0  ]]; then
-        echo "Error"
+        echo -e "${BRED}Error${Color_Off}"
         ERRORS=1
     else
-        echo "OK"
+        echo -e "${BGreen}OK${Color_Off}"
     fi
 
 done
+
+echo -e "${BYellow}======================================================="
+echo -e "| Cheking ZTP Manifests in kustomization.yaml        ${LBlue} |"
+echo -e "=======================================================${Color_Off}"
+
+echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
+
+kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
+if [[ $? != 0  ]]; then
+    echo -e "${BRed}Error${Color_Off}"
+    ERRORS=1
+else
+    echo -e "${BGreen}OK${Color_Off}"
+fi
+
 
 echo "Log details in: ${PRE_VALIDATE_ERROR_LOG}"
 
