@@ -90,10 +90,10 @@ for FILE in ${FILES[@]}
 do
     echo -e  "\t $FILE"
     echo -ne "\t - yamllint validation: "
-    yamllint ${VALIDATE_SRC}/${FILE} -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
+    yamllint ${VALIDATE_SRC}/${FILE}  -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
 
     if [[ $? != 0  ]]; then
-        echo -e "${BRED}Error${Color_Off}"
+        echo -e "${BRed}Error${Color_Off}"
         ERRORS=1
     else
         echo -e "${BGreen}OK${Color_Off}"
@@ -107,7 +107,7 @@ echo -e "=======================================================${Color_Off}"
 
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
-kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
+kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
 if [[ $? != 0  ]]; then
     echo -e "${BRed}Error${Color_Off}"
     ERRORS=1
