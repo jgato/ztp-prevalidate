@@ -1,6 +1,109 @@
-# Validating ZTP Manifests before deploying
+# What is ztp-prevalidate?
 
-ZTP (Zero Touch Provisioning) GitOps is a methodology that allows you to manage your cluster deployments/upgrading/monitoring using a GitOps workflow. Main components involved: 
+This repository contains an script that would help you te pre-validate the Manifests used by [Red Hat ZTP Gitops tools](), actually [Siteconfigs](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-deploying-a-site_ztp-deploying-disconnected) and [PolicyGenTemplates](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-the-policygentemplate_ztp-deploying-disconnected). 
+
+These two manifests can be pretty long/complex and potentially containing different errors about syntax or wrong usage. It wold be nice to pre-validate them before going to the usual Gitops workflow.
+
+## How to install
+
+You can just download the script (there is also a hook script that can be used together with Git) and execute it.
+
+### Requirements
+
+It is just a bash script but you will need:
+
+- ['yamllint' tool](https://github.com/adrienverge/yamllint)
+
+- yq
+
+- podman
+
+- Connectivity to Openshift cluster (export KUBECONFIG=kubeconfig). You need this, because it will validate the generated Openshift/Kubernetes resources with the Openshift/Kubernetes API. Dont worry, it is just testing and it dont not persist anything in your cluster.
+
+### Executing the script
+
+You can just run the script on a directory containing a 'kustomization.yaml' file, which points to other yamls files. These files will be Manifests with Siteconfig or PolicyGenTemplate resources. 
+
+```bash
+$> <PATH_TO_SCRIPT>/pre-validate-manifests.sh .
+Validating with ztp-site-generator: registry.redhat.io/openshift4/ztp-site-generate-rhel8:v4.10.0
+=======================================================
+| Cheking yaml syntax for files in kustomization.yaml |
+=======================================================
+     common-ranGen-4.10.yaml
+     - yamllint validation: OK
+     common-ranGen-4.9.yaml
+     - yamllint validation: OK
+     group-du-sno-ranGen.yaml
+     - yamllint validation: OK
+     site-specific-policies/sno-lenovo.yaml
+     - yamllint validation: OK
+     site-specific-policies/intel-1-sno-1.yaml
+     - yamllint validation: OK
+     site-specific-policies/intel-1-sno-1-test-dpdk.yaml
+     - yamllint validation: OK
+=======================================================
+| Cheking ZTP Manifests in kustomization.yaml         |
+=======================================================
+     * Checking Siteconfig/PGT Manifests in kustomization.yaml: OK
+Log details in: /tmp/pre-validate-error-5879.log
+```
+
+In this case yaml syntax validation and the manifests were correct, you can proceed with the usual Gitops workflow, to upload the changes to your cluster.
+
+```bash
+$> <PATH_TO_SCRIPT>/pre-validate-manifests.sh .
+Validating with ztp-site-generator: registry.redhat.io/openshift4/ztp-site-generate-rhel8:v4.10.0
+=======================================================
+| Cheking yaml syntax for files in kustomization.yaml |
+=======================================================
+	 common-ranGen-4.10.yaml
+	 - yamllint validation: OK
+	 common-ranGen-4.9.yaml
+	 - yamllint validation: OK
+	 group-du-sno-ranGen.yaml
+	 - yamllint validation: OK
+	 site-specific-policies/sno-lenovo.yaml
+	 - yamllint validation: OK
+	 site-specific-policies/intel-1-sno-1.yaml
+	 - yamllint validation: OK
+	 site-specific-policies/intel-1-sno-1-test-dpdk.yaml
+	 - yamllint validation: OK
+	 common-error-check.yaml
+	 - yamllint validation: Error
+=======================================================
+| Cheking ZTP Manifests in kustomization.yaml         |
+=======================================================
+	 * Checking Siteconfig/PGT Manifests in kustomization.yaml: Error
+Log details in: /tmp/pre-validate-error-6339.log
+```
+
+Here we find some errors about syntax and the manifests:
+
+```bash
+> cat /tmp/pre-validate-error-16700.log
+.//common-error-check.yaml
+  69:39     error    trailing spaces  (trailing-spaces)
+...
+Error from server (Invalid): error when creating "STDIN": PlacementRule.apps.open-cluster-management.io "common-RanGen-4.10-placementrules" is invalid: metadata.name: Invalid value: "common-RanGen-4.10-placementrules": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": PlacementBinding.policy.open-cluster-management.io "common-RanGen-4.10-placementbinding" is invalid: metadata.name: Invalid value: "common-RanGen-4.10-placementbinding": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": Policy.policy.open-cluster-management.io "common-RanGen-4.10-config-policy" is invalid: metadata.name: Invalid value: "common-RanGen-4.10-config-policy": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+Error from server (Invalid): error when creating "STDIN": Policy.policy.open-cluster-management.io "common-RanGen-4.10-subscriptions-policy" is invalid: metadata.name: Invalid value: "common-RanGen-4.10-subscriptions-policy": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+
+
+```
+
+Here we find some errors about syntax and also about the wrong usage of CRs (in this case PolicyGenTemplate).
+
+There are more examples of errors below.
+
+# More context about why this kind of validation is needed
+
+*This section tries to give some feedback and experience, about, how this tool would be useful. It also, gives context about how the ZTP tools work, and it presents the script details. The script is just an idea that would be implemented in many different ways*
+
+### How ZTP GitOps works
+
+[Red Hat ZTP (Zero Touch Provisioning) GitOps](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html) is a methodology that allows you to manage your cluster deployments/upgrading/monitoring using a GitOps workflow. Main components involved: 
 
 * ACM (Advanced Cluster Management): an Openshift/Kubernetes cluster which manages other Openshift/Kubernetes clusters. 
 
@@ -78,18 +181,6 @@ This first implementation try includes a simple script that will make the valida
 
 * The output from previous step has transformed int Siteconfig/PolicyGenTemplate CRs. These new Manifests are applied to the Openshift cluster with a [--dri-run=server](https://kubernetes.io/blog/2019/01/14/apiserver-dry-run-and-kubectl-diff/#apiserver-dry-run). In this way, the generated Manifests are passed to your cluster API-Server, but not applied. More errors are detected here.
 
-## Requirements
-
-It is just a bash script but you will need:
-
-* ['yamllint' tool](https://github.com/adrienverge/yamllint)
-
-* yq 
-
-* podman
-
-* Connectivity to Openshift cluster (export KUBECONFIG=kubeconfig)
-
 
 
 ## NameSpaces limitation and --dry-run
@@ -102,7 +193,7 @@ Resources depending on other resources (for example a NameSpace) will fail. The 
 
 * Workaround, the script will substitute the NameSpaces destinations to default one (that will always exists). Anyway, nothing will be created there, because during --dry-run nothing is persisted.
 
-## Executing the script
+## Some errors detected by the script
 
 Following some detected errors. The directory I am using it contains lots of Manifests:
 
