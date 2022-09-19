@@ -1,6 +1,6 @@
 # What is ztp-prevalidate?
 
-This repository contains an script that would help you te pre-validate the Manifests used by [Red Hat ZTP Gitops tools](), actually [Siteconfigs](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-deploying-a-site_ztp-deploying-disconnected) and [PolicyGenTemplates](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-the-policygentemplate_ztp-deploying-disconnected). 
+This repository contains an script that would help you te pre-validate the Manifests used by [Red Hat ZTP Gitops tools](), actually [Siteconfigs](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-deploying-a-site_ztp-deploying-disconnected) and [PolicyGenTemplates](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html#ztp-the-policygentemplate_ztp-deploying-disconnected).
 
 These two manifests can be pretty long/complex and potentially containing different errors about syntax or wrong usage. It wold be nice to pre-validate them before going to the usual Gitops workflow.
 
@@ -22,7 +22,7 @@ It is just a bash script but you will need:
 
 ### Executing the script
 
-You can just run the script on a directory containing a 'kustomization.yaml' file, which points to other yamls files. These files will be Manifests with Siteconfig or PolicyGenTemplate resources. 
+You can just run the script on a directory containing a 'kustomization.yaml' file, which points to other yamls files. These files will be Manifests with Siteconfig or PolicyGenTemplate resources.
 
 ```bash
 $> <PATH_TO_SCRIPT>/pre-validate-manifests.sh .
@@ -103,13 +103,13 @@ There are more examples of errors below.
 
 ### How ZTP GitOps works
 
-[Red Hat ZTP (Zero Touch Provisioning) GitOps](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html) is a methodology that allows you to manage your cluster deployments/upgrading/monitoring using a GitOps workflow. Main components involved: 
+[Red Hat ZTP (Zero Touch Provisioning) GitOps](https://docs.openshift.com/container-platform/4.10/scalability_and_performance/ztp-deploying-disconnected.html) is a methodology that allows you to manage your cluster deployments/upgrading/monitoring using a GitOps workflow. Main components involved:
 
-* ACM (Advanced Cluster Management): an Openshift/Kubernetes cluster which manages other Openshift/Kubernetes clusters. 
+* ACM (Advanced Cluster Management): an Openshift/Kubernetes cluster which manages other Openshift/Kubernetes clusters.
 
-* HIVE/AI: which allows ACM to deploy Openshift clusters. 
-  
-  There exists other installers to deploy other kind of clusters. Or, to deploy clusters on specific cloud providers. 
+* HIVE/AI: which allows ACM to deploy Openshift clusters.
+
+  There exists other installers to deploy other kind of clusters. Or, to deploy clusters on specific cloud providers.
 
 * ZTP tooling: basically a set of two Kustomize plugins, that allows you to manage two different CustomResources (Siteconfig/PolicyGentTemplate) to define your clusters and policies.
 
@@ -117,7 +117,7 @@ There are more examples of errors below.
 
 As a summary:  a Git repository with sites and policies definitions. The repo is sync with ArgoCD, and the Kustomize plugins transform sites and policies into ACM resources to start the installation and upgrade.
 
-This document presents an initial idea to validate these resources before going to Git. It would help you to make some pre-validations. but it is not something wide used or tested. 
+This document presents an initial idea to validate these resources before going to Git. It would help you to make some pre-validations. but it is not something wide used or tested.
 
 This document does not cover how to use and install ZTP. You can get more info [here](https://github.com/RHsyseng/telco-operations/tree/main/ztp/remote-worker-day0/ztp-policygentool) and with the official [Red Hat documentation](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.9/html/scalability_and_performance/ztp-deploying-disconnected). This other article shows an example of [why to use ZTP](https://www.redhat.com/en/blog/absolute-zero-touch-because-you-cant-reach-all-way-edge)
 
@@ -132,16 +132,16 @@ ZTP with GitOps methodology implies these steps in your (daily) activities:
 3) Push your changes.
 
 4) Maybe (good practice) your changes cannot be pushed to the branch synced with ArgoCD.
-   
+
    1) You make a PR to that branch
-   
+
    2) Some else will validate the PR
 
 5) ArgoCD syncs the changes and here happens a real validation:
-   
+
    1) Kustomize plugins will split SiteConfig/PolicyGenTemplate into ACM Resources. Some errors can be detected here if the Manifests are not correct.
-   
-   2) The generated ACM resources are applied to the Openshift cluster. More errors could happen here more related to Kubernetes. 
+
+   2) The generated ACM resources are applied to the Openshift cluster. More errors could happen here more related to Kubernetes.
 
 6) If something was wrong the error stops all the process, and you have to go back to step 1) or 2). If everything is ok, the sync is done, ACM/Hive will make all the work for you.
 
@@ -149,9 +149,9 @@ The main validation happens on step 5, when a "machine" is trying to apply your 
 
 To create a SiteConfig/PolicyGenTemplate is not an easy task. These contains many fields and many fields potentially creates many point's of error. You can have a look on the CRD of [SiteConfig](https://github.com/openshift-kni/cnf-features-deploy/blob/master/ztp/ran-crd/site-config-crd.yaml) and [PGT](https://github.com/openshift-kni/cnf-features-deploy/blob/master/ztp/ran-crd/policy-gen-template-crd.yaml)
 
-Therefore, you create your Manifests and push everything not been sure 100% is right until step 6). Sometimes you fail for very simple things: a typo, bad format in your yaml,  incorrect naming, a forgotten NS, etc. And of course, more advanced errors with Manifests not compliant with the CRD. 
+Therefore, you create your Manifests and push everything not been sure 100% is right until step 6). Sometimes you fail for very simple things: a typo, bad format in your yaml,  incorrect naming, a forgotten NS, etc. And of course, more advanced errors with Manifests not compliant with the CRD.
 
-If you fail, you try to fix and you end up messing your git history with many unnecessary commits and wasting your time. 
+If you fail, you try to fix and you end up messing your git history with many unnecessary commits and wasting your time.
 
 ## Pre-validating before pushing
 
@@ -170,11 +170,11 @@ In this tutorial, a first try with a pretty simple [script](./pre-validate-manif
 This first implementation try includes a simple script that will make the validation. How does it works:
 
 * It uses ['yamllint' tool](https://github.com/adrienverge/yamllint) to make a first yaml verification. It there are errors stops here.
-  
+
   * Improvement: to verify only the files included in the kustomization
 
 * It extracts the Kustomization plugins (for Siteconfig/PolicyGenTemplate) directly from [ZTP tools](https://github.com/openshift-kni/cnf-features-deploy/tree/master/ztp/ran-crd). These are directly extracted from the ZTP-site-generator Container Image.
-  
+
   * Improvement: to dig into ArgoCD to check which Container Image is going to be used later. So you ensure, you make the pre-validation with the same tools than later will be used.
 
 * Kustomization plugins are executed over an specific directory. These validates your Manifests are compliant with ZTP tooling
@@ -187,7 +187,7 @@ This first implementation try includes a simple script that will make the valida
 
 It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a but, but a feature (or limitation)
 
-The --dri-run=server will pass all the manifests to the API-Server but the resources are not persisted. 
+The --dri-run=server will pass all the manifests to the API-Server but the resources are not persisted.
 
 Resources depending on other resources (for example a NameSpace) will fail. The NameSpace problem: during the --dry-run the needed NameSpaces are created, but not persisted. Next objects that will be stored on that NS will fail.
 
@@ -293,7 +293,7 @@ ls: cannot access '/home/jgato/Projects-src/rh-gitlab/cnf-workload-certification
 This file does not exists, so, we can delete it from the Kustomization file:
 
 ```yaml
-> cat ~/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/kustomization.yaml 
+> cat ~/Projects-src/rh-gitlab/cnf-workload-certification/ztp-deployments/ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -394,18 +394,28 @@ So 'clustername' in the SiteConfig needs to be lowercased:
 
 ```yaml
 ...
-    clusters:                                                                       
-  - clusterName: "sno4"                                                                                                                                                                                                                                       
-    networkType: "OVNKubernetes"                                                  
-    clusterLabels:      
+    clusters:
+  - clusterName: "sno4"
+    networkType: "OVNKubernetes"
+    clusterLabels:
 ...
 ```
+
+### Error in Kuberentes: type errors
+
+There are type validations that can be detected:
+
+```yaml
+The PlacementRule "extra-intel-1-sno-1-placementrules" is invalid: spec.clusterSelector.matchExpressions.values: Invalid value: "boolean": spec.clusterSelector.matchExpressions.values in body must be of type string: "boolean"
+```
+Because there are no booleans, instead use an string.
+
 
 # Using the script with Git hooks
 
 For this initial idea, we can create a Git hook for 'pre-commit' that executes our validation script.  Maybe with commits it will be executed to often, and you can use the pre-push hook.
 
-The hook is not too complex, but it test if the commit you are doing makes changes on Siteconfig and/or PolicyGenTemplates. 
+The hook is not too complex, but it test if the commit you are doing makes changes on Siteconfig and/or PolicyGenTemplates.
 
 ```bash
 #!/usr/bin/sh
@@ -479,7 +489,7 @@ Lets change one siteconfig cluster name to something wrong:
 Wrong name on one of our clusters:
 
 ```yaml
-> cat siteconfig/sno-b7-e-4-10-ipv4.yaml 
+> cat siteconfig/sno-b7-e-4-10-ipv4.yaml
 apiVersion: ran.openshift.io/v1
 kind: SiteConfig
 metadata:
@@ -502,7 +512,7 @@ Notice the error in 'clusterName: "SNO-b7'
 The script will try to find as much errors as possible by commit. So lets include also an error on the PolicyGenTemplates. For example: adding to kustomization file, a PolicyGenTemplate that does not exists:
 
 ```yaml
-> cat policygentemplates/kustomization.yaml 
+> cat policygentemplates/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -522,7 +532,7 @@ We add both modified files and commit:
 ```bash
 $> git add siteconfig/sno-b7-e-4-10-ipv4.yaml policygentemplates/kustomization.yaml
 
-$> git commit 
+$> git commit
 ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig/sno-b7-e-4-10-ipv4.yaml
 Pre validation of Siteconfigs directory
 Error from server (Invalid): error when creating "STDIN": Namespace "SNO-b7" is invalid: metadata.name: Invalid value: "SNO-b7": a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?')
