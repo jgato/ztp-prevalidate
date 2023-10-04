@@ -68,6 +68,14 @@ else
     fi
 fi
 
+FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
+N_FILES=${#FILES}
+
+if [[ $N_FILES == 0  ]]; then
+    echo -e "${BGreen}Empty kustomization. No files to validate.${Color_Off}"
+    exit 0
+fi
+
 oc get clusterversion > /dev/null
 
 if [[ $? != 0  ]]; then
@@ -83,8 +91,6 @@ get_plugins
 echo -e "${BYellow}======================================================="
 echo "| Cheking yaml syntax for files in kustomization.yaml |"
 echo -e "=======================================================${Color_Off}"
-
-FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
 
 for FILE in ${FILES[@]}
 do
@@ -114,7 +120,6 @@ if [[ $? != 0  ]]; then
 else
     echo -e "${BGreen}OK${Color_Off}"
 fi
-
 
 echo "Log details in: ${PRE_VALIDATE_ERROR_LOG}"
 
