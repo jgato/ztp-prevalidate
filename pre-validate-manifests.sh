@@ -68,12 +68,37 @@ else
     fi
 fi
 
+# first, ensure kustomization.yaml is correct
+#
+echo -e "${BYellow}======================================================="
+echo "| Cheking kustomization.yaml syntax                   |"
+echo -e "=======================================================${Color_Off}"
+
+yamllint ${VALIDATE_SRC}kustomization.yaml  -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
+
+echo -ne "\t * Checking kustomization.yaml: "
+
+if [[ $? != 0  ]]; then
+    echo -e "${BRed}Error${Color_Off}"
+    echo "Log details in: ${PRE_VALIDATE_ERROR_LOG}"
+    exit  1
+else
+    echo -e "${BGreen}OK${Color_Off}"
+fi
+
 FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
 N_FILES=${#FILES}
 
+# second, ensure kustomization.yaml contains files to check
+# if no, we dont even continue
+
+echo -ne "\t * Checking files to check "
+
 if [[ $N_FILES == 0  ]]; then
-    echo -e "${BGreen}Empty kustomization. No files to validate.${Color_Off}"
+    echo -e "${BGreen}Empty. No need to continue.${Color_Off}"
     exit 0
+else
+    echo -e "${BGreen}${N_FILES}${Color_Off}"
 fi
 
 oc get clusterversion > /dev/null
