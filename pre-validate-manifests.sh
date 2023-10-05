@@ -92,7 +92,7 @@ N_FILES=${#FILES}
 # second, ensure kustomization.yaml contains files to check
 # if no, we dont even continue
 
-echo -ne "\t * Checking files to check "
+echo -ne "\t * Files to check "
 
 if [[ $N_FILES == 0  ]]; then
     echo -e "${BGreen}Empty. No need to continue.${Color_Off}"
