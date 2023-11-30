@@ -14,7 +14,8 @@ It is just a bash script but you will need:
 
 - ['yamllint' tool](https://github.com/adrienverge/yamllint)
 
-- yq
+- [yq](https://github.com/mikefarah/yq)
+
 
 - podman
 
