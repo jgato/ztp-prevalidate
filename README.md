@@ -176,8 +176,6 @@ This first implementation try includes a simple script that will make the valida
 
 * It extracts the Kustomization plugins (for Siteconfig/PolicyGenTemplate) directly from [ZTP tools](https://github.com/openshift-kni/cnf-features-deploy/tree/master/ztp/ran-crd). These are directly extracted from the ZTP-site-generator Container Image.
 
-  * Improvement: to dig into ArgoCD to check which Container Image is going to be used later. So you ensure, you make the pre-validation with the same tools than later will be used.
-
 * Kustomization plugins are executed over an specific directory. These validates your Manifests are compliant with ZTP tooling
 
 * The output from previous step has transformed int Siteconfig/PolicyGenTemplate CRs. These new Manifests are applied to the Openshift cluster with a [--dri-run=server](https://kubernetes.io/blog/2019/01/14/apiserver-dry-run-and-kubectl-diff/#apiserver-dry-run). In this way, the generated Manifests are passed to your cluster API-Server, but not applied. More errors are detected here.
@@ -186,7 +184,7 @@ This first implementation try includes a simple script that will make the valida
 
 ## NameSpaces limitation and --dry-run
 
-It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a but, but a feature (or limitation)
+It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a bug, but a feature (or limitation)
 
 The --dri-run=server will pass all the manifests to the API-Server but the resources are not persisted.
 
