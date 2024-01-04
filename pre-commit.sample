@@ -1,12 +1,14 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 #
 # hook to verify if ZTP CRs are valid
 
 # author: Jose Gato Luis <jgato@redhat.com>
 
 
-SITECONFIGS=site-configs/
-PGTS=site-policies/
+SITECONFIGS=(ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig
+    ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/siteconfig-4.14)
+PGTS=(ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates
+    ZTP/HubClusters/el8k/SpokeClusters/ztp-gitops/gitop-repo/policygentemplates-workstream)
 VERIFY_SCRIPT=/home/jgato/Projects-src/my_github/ztp-prevalidate/pre-validate-manifests.sh
 ERROR=0
 
@@ -21,25 +23,29 @@ fi
 
 # lets do the pre-validation but only on the proper directory
 
-if git diff --name-only --cached | grep "${SITECONFIGS}" > /dev/null
-then
-    echo "Pre validation of Siteconfigs directory"
-    (${VERIFY_SCRIPT} ${SITECONFIGS})
-fi
-if [[ $? != 0  ]]; then
-    ERROR=1
-fi
+for SITECONFIG in "${SITECONFIGS[@]}";
+do
+  if git diff --name-only --cached | grep "${SITECONFIG}" > /dev/null
+  then
+      echo -e "\nPre validation of Siteconfigs directory: $(basename "${SITECONFIG}")\n"
+      if ! (${VERIFY_SCRIPT} "${SITECONFIG}") then
+          ERROR=1
+      fi
+  fi
+done
 
-if git diff --name-only --cached | grep "${PGTS}"  > /dev/null
-then
-    echo "Pre validation of PolicyGenTemplates directory"
-    (${VERIFY_SCRIPT} ${PGTS})
-fi
-if [[ $? != 0  ]]; then
-    ERROR=1
-fi
+for PGT in "${PGTS[@]}";
+do
+  if git diff --name-only --cached | grep "${PGT}"  > /dev/null
+  then
+      echo -e "\nPre validation of PolicyGenTemplates directory: $(basename "${PGT}")\n"
+      if ! (${VERIFY_SCRIPT} "${PGT}") then
+          ERROR=1
+      fi
+  fi
+done
 
-if [[ ${ERROR} != 0 ]]
+if [ ${ERROR} != 0 ]
 then
     echo "==========================================================="
     echo "| The commit is aborted until errors ar solved            |"
@@ -51,5 +57,3 @@ then
 fi
 
 exit $ERROR
-
-
