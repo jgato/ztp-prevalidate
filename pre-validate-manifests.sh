@@ -121,7 +121,7 @@ if [[ ! -f  "${VALIDATE_SRC}kustomization.yaml" ]]; then
     exit 1
 fi
 
-if [[ !$DISABLE_YAML_LINT ]] ; then
+if [[ !${$DISABLE_YAML_LINT} ]] ; then
     check_kustomization_sintax
 else
     echo -e "${BGreen} Skip kustomization syntax --no-yaml-lint. ${Color_Off}"
@@ -167,10 +167,10 @@ echo -e "=======================================================${Color_Off}"
 
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
-if [[ DISABLE_REMOTE_CHECK ]]; then
-    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
-else
+if [[ ${DISABLE_REMOTE_CHECK} ]]; then
     kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG}  | oc apply --dry-run=client -f - &>> ${PRE_VALIDATE_ERROR_LOG}
+else
+    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
 fi
 
 if [[ $? != 0  ]]; then
