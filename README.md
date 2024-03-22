@@ -12,10 +12,11 @@ You can just download the script (there is also a hook script that can be used t
 
 It is just a bash script but you will need:
 
-- ['yamllint' tool](https://github.com/adrienverge/yamllint)
+- [Optional] ['yamllint' tool](https://github.com/adrienverge/yamllint)
 
-- [yq](https://github.com/mikefarah/yq)
+- [Optional] [yq](https://github.com/mikefarah/yq)
 
+If you dont have (or you cannot install) neither `yq` nor `yamllint` you will have to use the param `--disable-yaml-lint`. Both are used/combined for the yamllint validation feature.
 
 - podman
 
@@ -24,6 +25,13 @@ It is just a bash script but you will need:
 ### Executing the script
 
 You can just run the script on a directory containing a 'kustomization.yaml' file, which points to other yamls files. These files will be Manifests with Siteconfig or PolicyGenTemplate resources.
+
+Optional parameters:
+ * `--disable-yaml-lint`: this disable the usage of the tool yamllint. Maybe you dont have this tool. Disabling lint makes you to miss some errors you would be having. So, it should be disabled in case you cannot get the yamllint binary
+ * `--disable-remote-check`: this disable the usage of a remote Openshift/Kubernetes API. In this case, you have to export the ZTP_SITE_GENERATOR_IMG env variable to point where to download ZTP Plugins. Useful, when you dont have access to the Openshift/Kubernetes API
+
+> disable-remote-check will detect less potential errors, and make the check less similar to what it is going to happen later on ArgoCD. In this case, the generated resources by the ZTP Plugins cannot be tested against a Openshift/Kubernetes API. So, the generator is invoked and captured any generation error.
+
 
 ```bash
 $> <PATH_TO_SCRIPT>/pre-validate-manifests.sh .
@@ -176,6 +184,8 @@ This first implementation try includes a simple script that will make the valida
 
 * It extracts the Kustomization plugins (for Siteconfig/PolicyGenTemplate) directly from [ZTP tools](https://github.com/openshift-kni/cnf-features-deploy/tree/master/ztp/ran-crd). These are directly extracted from the ZTP-site-generator Container Image.
 
+  * Improvement: to dig into ArgoCD to check which Container Image is going to be used later. So you ensure, you make the pre-validation with the same tools than later will be used.
+
 * Kustomization plugins are executed over an specific directory. These validates your Manifests are compliant with ZTP tooling
 
 * The output from previous step has transformed int Siteconfig/PolicyGenTemplate CRs. These new Manifests are applied to the Openshift cluster with a [--dri-run=server](https://kubernetes.io/blog/2019/01/14/apiserver-dry-run-and-kubectl-diff/#apiserver-dry-run). In this way, the generated Manifests are passed to your cluster API-Server, but not applied. More errors are detected here.
@@ -184,7 +194,7 @@ This first implementation try includes a simple script that will make the valida
 
 ## NameSpaces limitation and --dry-run
 
-It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a bug, but a feature (or limitation)
+It is very well explained [here](https://github.com/kubernetes/kubernetes/issues/83562). Not a but, but a feature (or limitation)
 
 The --dri-run=server will pass all the manifests to the API-Server but the resources are not persisted.
 
