@@ -71,7 +71,8 @@ check_kustomization_sintax()
     fi
 }
 
-if [[ $1 == "-h" || $1 == "--help"  ]]; then
+echo $#
+if [[ $1 == "-h" || $1 == "--help" || $# -gt 3 ]]; then
     usage
 fi
 
