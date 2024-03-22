@@ -71,7 +71,6 @@ check_kustomization_sintax()
     fi
 }
 
-echo $#
 if [[ $1 == "-h" || $1 == "--help" || $# -gt 3 ]]; then
     usage
 fi
@@ -130,7 +129,7 @@ else
     # if no, we dont even continue
 
     # ToDo: think on an alternative if there is no yq available
-    # or we just force to do --skip-yaml-lint, that would be a pity    
+    # or we just force to do --skip-yaml-lint, that would be a pity
     FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
     N_FILES=${#FILES}
 
@@ -159,7 +158,7 @@ else
         else
             echo -e "${BGreen}OK${Color_Off}"
         fi
-    done   
+    done
 fi
 
 
