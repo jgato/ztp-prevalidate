@@ -12,10 +12,11 @@ You can just download the script (there is also a hook script that can be used t
 
 It is just a bash script but you will need:
 
-- ['yamllint' tool](https://github.com/adrienverge/yamllint)
+- [Optional] ['yamllint' tool](https://github.com/adrienverge/yamllint)
 
-- [yq](https://github.com/mikefarah/yq)
+- [Optional] [yq](https://github.com/mikefarah/yq)
 
+If you dont have (or you cannot install) neither `yq` nor `yamllint` you will have to use the param `--disable-yaml-lint`. Both are used/combined for the yamllint validation feature.
 
 - podman
 

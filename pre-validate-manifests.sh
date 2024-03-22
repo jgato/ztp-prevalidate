@@ -129,6 +129,8 @@ else
     # second, ensure kustomization.yaml contains files to check
     # if no, we dont even continue
 
+    # ToDo: think on an alternative if there is no yq available
+    # or we just force to do --skip-yaml-lint, that would be a pity    
     FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
     N_FILES=${#FILES}
 
