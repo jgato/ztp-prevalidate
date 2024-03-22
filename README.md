@@ -29,7 +29,8 @@ Optional parameters:
  * `--disable-yaml-lint`: this disable the usage of the tool yamllint. Maybe you dont have this tool. Disabling lint makes you to miss some errors you would be having. So, it should be disabled in case you cannot get the yamllint binary
  * `--disable-remote-check`: this disable the usage of a remote Openshift/Kubernetes API. In this case, you have to export the ZTP_SITE_GENERATOR_IMG env variable to point where to download ZTP Plugins. Useful, when you dont have access to the Openshift/Kubernetes API
 
-> disable-remote-check will detect less potential errors, and make the check less similar to what it is going to happen later on ArgoCD. In this case, the generated resources by the ZTP Plugins are tested with an usual local --dry-run=client, instead of a remote --dry-run=server.
+> disable-remote-check will detect less potential errors, and make the check less similar to what it is going to happen later on ArgoCD. In this case, the generated resources by the ZTP Plugins cannot be tested against a Openshift/Kubernetes API. So, the generator is invoked and captured any generation error.
+
 
 ```bash
 $> <PATH_TO_SCRIPT>/pre-validate-manifests.sh .

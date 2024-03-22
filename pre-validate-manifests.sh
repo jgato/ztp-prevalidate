@@ -121,45 +121,46 @@ if [[ ! -f  "${VALIDATE_SRC}kustomization.yaml" ]]; then
     exit 1
 fi
 
-if [[ !${$DISABLE_YAML_LINT} ]] ; then
+if [[ "${DISABLE_YAML_LINT}" = true ]]; then
+    echo -e "${BGreen} Skip yaml lint as requested. ${Color_Off}"
+else
     check_kustomization_sintax
-else
-    echo -e "${BGreen} Skip kustomization syntax --no-yaml-lint. ${Color_Off}"
-fi
+    # second, ensure kustomization.yaml contains files to check
+    # if no, we dont even continue
 
-# second, ensure kustomization.yaml contains files to check
-# if no, we dont even continue
+    FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
+    N_FILES=${#FILES}
 
-FILES=`cat ${VALIDATE_SRC}kustomization.yaml  | yq e '.generators[]'`
-N_FILES=${#FILES}
+    echo -ne "\t * Files to check "
 
-echo -ne "\t * Files to check "
-
-if [[ $N_FILES == 0  ]]; then
-    echo -e "${BGreen}Empty. No need to continue.${Color_Off}"
-    exit 0
-else
-    echo -e "${BGreen}${N_FILES}${Color_Off}"
-fi
-
-echo -e "${BYellow}======================================================="
-echo "| Cheking yaml syntax for files in kustomization.yaml |"
-echo -e "=======================================================${Color_Off}"
-
-for FILE in ${FILES[@]}
-do
-    echo -e  "\t $FILE"
-    echo -ne "\t - yamllint validation: "
-    yamllint ${VALIDATE_SRC}/${FILE}  -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
-
-    if [[ $? != 0  ]]; then
-        echo -e "${BRed}Error${Color_Off}"
-        ERRORS=1
+    if [[ ${N_FILES} == 0  ]]; then
+        echo -e "${BGreen}Empty. No need to continue.${Color_Off}"
+        exit 0
     else
-        echo -e "${BGreen}OK${Color_Off}"
+        echo -e "${BGreen}${N_FILES}${Color_Off}"
     fi
 
-done
+    echo -e "${BYellow}======================================================="
+    echo "| Cheking yaml syntax for files in kustomization.yaml |"
+    echo -e "=======================================================${Color_Off}"
+
+    for FILE in ${FILES[@]}
+    do
+        echo -e  "\t $FILE"
+        echo -ne "\t - yamllint validation: "
+        yamllint ${VALIDATE_SRC}/${FILE}  -d relaxed --no-warnings &>> ${PRE_VALIDATE_ERROR_LOG}
+
+        if [[ $? != 0  ]]; then
+            echo -e "${BRed}Error${Color_Off}"
+            ERRORS=1
+        else
+            echo -e "${BGreen}OK${Color_Off}"
+        fi
+    done   
+fi
+
+
+
 
 echo -e "${BYellow}======================================================="
 echo -e "| Cheking ZTP Manifests in kustomization.yaml        ${LBlue} |"
@@ -167,8 +168,8 @@ echo -e "=======================================================${Color_Off}"
 
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
-if [[ ${DISABLE_REMOTE_CHECK} ]]; then
-    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG}  | oc apply --dry-run=client -f - &>> ${PRE_VALIDATE_ERROR_LOG}
+if [[ "${DISABLE_REMOTE_CHECK}" = true ]]; then
+    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins  2>> ${PRE_VALIDATE_ERROR_LOG} 1>>/dev/null
 else
     kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
 fi
