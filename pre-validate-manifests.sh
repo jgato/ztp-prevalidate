@@ -31,6 +31,25 @@ FILES=()
 DISABLE_YAML_LINT=false
 DISABLE_REMOTE_CHECK=false
 
+
+usage()
+{
+    echo "This script will use ZTP Kustomize generator plugins to pre-validate your local ZTP Manifests. As a previous step to push them to your Git repo, and then, into ArgoCD"
+    echo -e
+    echo "Usage:"
+    echo "  $(basename $0) DIR_WITH_KUSTOMIZATION_YAML [OPTS]"
+    echo "  Optional params: "
+    echo "   --disable-yaml-lint: no yaml lint validation, useful if you dont have the yamlint validator binary"
+    echo "   --disable-remote-check: no check against a remote Openshift/Kubernetes API. In this case, you have to export the ZTP_SITE_GENERATOR_IMG env variable to point where to download ZTP Plugins. Useful, when you dont have access to the Openshift/Kubernetes API"
+    echo "   --local-generator-plugins: in this case the generator plugins are not downloaded, export a env variable KUSTOMIZE_PLUGIN_HOME with a path to the plugins."
+    echo  -e
+    echo " Clarification about the ZTP generator plugins. How are this gathered?"
+    echo "   By default, if you dont --disable-remote-check, it means you have a KUBECONFIG exported variable. The script will use the connectivity to the cluster, to find out which version of the plugins are in use. The plugins are automatically downloaded. "
+    echo "If you do  --disable-remote-check the script cannot find out which version of the plugins you are using in your cluster, and you have to manually export the env variable ZTP_SITE_GENERATOR_IMG, with the Container image that contains the plugins. The script will take the plugins from this image."
+    echo "   When you dont have any kind of connectivity, you can use your local version  of the plugins with --local-generator-plugins and exporting the plugins with KUSTOMIZE_PLUGIN_HOME"
+    exit 1
+}
+
 get_plugins()
 {
     export KUSTOMIZE_PLUGIN_HOME=/tmp/ztp-kustomize-plugin/
@@ -43,17 +62,6 @@ get_plugins()
         exit 1
     fi
     podman rm policgentool > /dev/null
-}
-
-usage()
-{
-    echo "Usage:"
-    echo "  $(basename $0) DIR_WITH_KUSTOMIZATION_YAML [OPTS]"
-    echo "  Optional params: "
-    echo "   --disable-yaml-lint: no yaml lint validation, useful if you dont have the yamlint validator binary"
-    echo "   --disable-remote-check: no check against a remote Openshift/Kubernetes API. In this case, you have to export the ZTP_SITE_GENERATOR_IMG env variable to point where to download ZTP Plugins. Useful, when you dont have access to the Openshift/Kubernetes API"
-    exit 1
-
 }
 
 check_kustomization_sintax()
@@ -71,7 +79,7 @@ check_kustomization_sintax()
     fi
 }
 
-if [[ $1 == "-h" || $1 == "--help" || $# -gt 3 ]]; then
+if [[ $1 == "-h" || $1 == "--help" || $# -gt 4 ]]; then
     usage
 fi
 
@@ -107,7 +115,14 @@ else
     echo -e "${BGreen}Validating with ztp-site-generator: ${ZTP_SITE_GENERATOR_IMG}${Color_Off}"
 fi
 
-get_plugins
+if [[ " $@ " =~ " --local-generator-plugins " ]]; then
+    if [[ -z "${KUSTOMIZE_PLUGIN_HOME}" ]]; then
+        echo -e "${BRed}When --local-generator-plugins, you have to export env variabel KUSTOMIZE_PLUGIN_HOME with the path to local path to the plugins. If you are using env variable ZTP_SITE_GENERATOR_IMG, it will be ignored.${Color_Off}"
+        exit 1
+    fi
+else
+    get_plugins
+fi
 
 
 # first, ensure kustomization.yaml is correct
@@ -171,7 +186,7 @@ echo -e "=======================================================${Color_Off}"
 echo -ne "\t * Checking Siteconfig/PGT Manifests in kustomization.yaml: "
 
 if [[ "${DISABLE_REMOTE_CHECK}" = true ]]; then
-    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins  2>> ${PRE_VALIDATE_ERROR_LOG} 1>>/dev/null
+    kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} 1>>/dev/null
 else
     kustomize build ${VALIDATE_SRC} --enable-alpha-plugins 2>> ${PRE_VALIDATE_ERROR_LOG} |  sed -E -e's/(namespace:)(.+)/\1 default\n/g' | oc apply --dry-run=server -f - &>> ${PRE_VALIDATE_ERROR_LOG}
 fi
