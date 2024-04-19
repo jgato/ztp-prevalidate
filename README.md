@@ -29,6 +29,7 @@ You can just run the script on a directory containing a 'kustomization.yaml' fil
 Optional parameters:
  * `--disable-yaml-lint`: this disable the usage of the tool yamllint. Maybe you dont have this tool. Disabling lint makes you to miss some errors you would be having. So, it should be disabled in case you cannot get the yamllint binary
  * `--disable-remote-check`: this disable the usage of a remote Openshift/Kubernetes API. In this case, you have to export the ZTP_SITE_GENERATOR_IMG env variable to point where to download ZTP Plugins. Useful, when you dont have access to the Openshift/Kubernetes API
+ * `-local-generator-plugins`: in this case the generator plugins are not downloaded, export a env variable KUSTOMIZE_PLUGIN_HOME with a path to the
 
 > disable-remote-check will detect less potential errors, and make the check less similar to what it is going to happen later on ArgoCD. In this case, the generated resources by the ZTP Plugins cannot be tested against a Openshift/Kubernetes API. So, the generator is invoked and captured any generation error.
 
