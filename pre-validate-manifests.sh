@@ -45,7 +45,7 @@ usage()
     echo  -e
     echo " Clarification about the ZTP generator plugins. How are this gathered?"
     echo "   By default, if you dont --disable-remote-check, it means you have a KUBECONFIG exported variable. The script will use the connectivity to the cluster, to find out which version of the plugins are in use. The plugins are automatically downloaded. "
-    echo "If you do  --disable-remote-check the script cannot find out which version of the plugins you are using in your cluster, and you have to manually export the env variable ZTP_SITE_GENERATOR_IMG, with the Container image that contains the plugins. The script will take the plugins from this image."
+    echo "   If you do  --disable-remote-check the script cannot find out which version of the plugins you are using in your cluster, and you have to manually export the env variable ZTP_SITE_GENERATOR_IMG, with the Container image that contains the plugins. The script will take the plugins from this image."
     echo "   When you dont have any kind of connectivity, you can use your local version  of the plugins with --local-generator-plugins and exporting the plugins with KUSTOMIZE_PLUGIN_HOME"
     exit 1
 }
